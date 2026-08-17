@@ -1,9 +1,11 @@
 // Builds an inline keyboard where each button's callback_data is `prefix:<index>`,
 // indexing back into the caller's own options array — keeps callback_data short
 // and avoids ever putting free text (over Telegram's 64-byte limit) on the wire.
-export function optionsKeyboard(options, prefix, columns = 2) {
-  const buttons = options.map((label, index) => ({
-    text: label,
+// `labels`, if given, supplies the button text shown to the user (e.g. with emoji)
+// while `options` stays the plain values the index refers back to.
+export function optionsKeyboard(options, prefix, columns = 2, labels = options) {
+  const buttons = options.map((_, index) => ({
+    text: labels[index],
     callback_data: `${prefix}:${index}`,
   }));
   const rows = [];

@@ -2,12 +2,26 @@ export const NOTION_VERSION = "2022-06-28";
 
 export const STATUSES = ["В черзі", "В роботі", "На правках", "Здано", "Архів"];
 export const ACTIVE_STATUSES = ["В черзі", "В роботі", "На правках"];
+// Display-only, button-label equivalent of STATUSES (same order/index) — never written to Notion.
+export const STATUS_LABELS = ["⏳ В черзі", "🔧 В роботі", "✏️ На правках", "✅ Здано", "🗄 Архів"];
 
 // Select-field option lists, kept in sync with the Notion "Orders" data source schema.
+// Each *_LABELS array is the button-text equivalent (same order/index) — display only,
+// never written to Notion; the plain arrays remain the actual Notion select values.
 export const WORK_TYPES = ["Рілс", "Креатив", "Моушн", "Карусель", "Презентація", "Інше"];
+export const WORK_TYPE_LABELS = ["🎬 Рілс", "🎨 Креатив", "✨ Моушн", "🎠 Карусель", "📊 Презентація", "🔹 Інше"];
+
 export const ORDER_SOURCES = ["Біржа", "Соцмережі", "Реферал", "Постійний клієнт", "Пряме звернення"];
+export const ORDER_SOURCE_LABELS = ["💼 Біржа", "📱 Соцмережі", "🤝 Реферал", "⭐ Постійний клієнт", "✉️ Пряме звернення"];
+
 export const PRIORITIES = ["Високий", "Середній", "Низький"];
+export const PRIORITY_LABELS = ["🔴 Високий", "🟡 Середній", "🟢 Низький"];
+
 export const CURRENCIES = ["UAH", "USD"];
+export const CURRENCY_LABELS = ["🇺🇦 UAH", "🇺🇸 USD"];
+
+export const PAYMENT_STATUSES = ["Не оплачено", "Частково", "Оплачено повністю"];
+export const PAYMENT_STATUS_LABELS = ["🔴 Не оплачено", "🟡 Частково", "🟢 Оплачено повністю"];
 
 export const START_MESSAGE = `Привіт! Я LayerLedger 👋
 Веду облік замовлень та доходу, все зберігаю в Notion.

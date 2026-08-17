@@ -2,9 +2,9 @@ import { sendMessage, editMessageText } from "../lib/telegram.js";
 import { optionsKeyboard, actionsKeyboard, mergeKeyboards } from "../lib/keyboard.js";
 import { setDraft, clearDraft } from "../lib/kv.js";
 import { escapeHtml } from "../lib/format.js";
-import { STATUSES } from "../constants.js";
+import { STATUSES, STATUS_LABELS, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS } from "../constants.js";
 import { queryActiveOrders } from "../commands/orders.js";
-import { applyStatusUpdate } from "../commands/status.js";
+import { applyStatusUpdate, applyPaymentUpdate } from "../commands/status.js";
 
 function orderStepKeyboard(orders) {
   const names = orders.map((o) => o.name);
@@ -12,7 +12,11 @@ function orderStepKeyboard(orders) {
 }
 
 function statusStepKeyboard() {
-  return mergeKeyboards(optionsKeyboard(STATUSES, "st:s", 1), actionsKeyboard([{ label: "Скасувати", data: "st:cancel" }]));
+  return mergeKeyboards(optionsKeyboard(STATUSES, "st:s", 1, STATUS_LABELS), actionsKeyboard([{ label: "Скасувати", data: "st:cancel" }]));
+}
+
+function paymentStepKeyboard() {
+  return mergeKeyboards(optionsKeyboard(PAYMENT_STATUSES, "st:p", 1, PAYMENT_STATUS_LABELS), actionsKeyboard([{ label: "Пропустити", data: "st:pskip" }]));
 }
 
 export async function start(env, chatId) {
@@ -29,7 +33,7 @@ export async function start(env, chatId) {
   }));
 
   const draft = { type: "status", step: 0, orders };
-  const res = await sendMessage(env, chatId, "Оберіть замовлення:", orderStepKeyboard(orders));
+  const res = await sendMessage(env, chatId, "🗂 Оберіть замовлення:", orderStepKeyboard(orders));
   const body = await res.json();
   draft.messageId = body?.result?.message_id;
   return setDraft(env, chatId, draft);
@@ -40,7 +44,10 @@ export async function handleCallback(env, chatId, messageId, data, draft) {
 
   if (action === "cancel") {
     await clearDraft(env, chatId);
-    return editMessageText(env, chatId, messageId, "❌ Скасовано.", { inline_keyboard: [] });
+    const text = draft.step === 2
+      ? `Статус «${escapeHtml(draft.selectedOrderName)}» вже змінено на Здано ✅. Оплату не оновлено.`
+      : "❌ Скасовано.";
+    return editMessageText(env, chatId, messageId, text, { inline_keyboard: [] });
   }
 
   if (draft.step === 0 && action === "o") {
@@ -55,7 +62,7 @@ export async function handleCallback(env, chatId, messageId, data, draft) {
       env,
       chatId,
       messageId,
-      `Замовлення: <b>${escapeHtml(order.name)}</b>\n\nОберіть новий статус:`,
+      `Замовлення: <b>${escapeHtml(order.name)}</b>\n\n🔄 Оберіть новий статус:`,
       statusStepKeyboard()
     );
   }
@@ -64,12 +71,51 @@ export async function handleCallback(env, chatId, messageId, data, draft) {
     const newStatus = STATUSES[parseInt(arg, 10)];
     if (!newStatus) return;
     await applyStatusUpdate(env, draft.selectedOrderId, newStatus);
+
+    if (newStatus === "Здано") {
+      draft.step = 2;
+      draft.messageId = messageId;
+      await setDraft(env, chatId, draft);
+      return editMessageText(
+        env,
+        chatId,
+        messageId,
+        `Статус «${escapeHtml(draft.selectedOrderName)}» змінено на Здано ✅\n\n💰 Оплату отримано повністю?`,
+        paymentStepKeyboard()
+      );
+    }
+
     await clearDraft(env, chatId);
     return editMessageText(
       env,
       chatId,
       messageId,
       `Статус «${escapeHtml(draft.selectedOrderName)}» змінено на ${newStatus} ✅`,
+      { inline_keyboard: [] }
+    );
+  }
+
+  if (draft.step === 2 && action === "pskip") {
+    await clearDraft(env, chatId);
+    return editMessageText(
+      env,
+      chatId,
+      messageId,
+      `Статус «${escapeHtml(draft.selectedOrderName)}» змінено на Здано ✅\nОплату не оновлено.`,
+      { inline_keyboard: [] }
+    );
+  }
+
+  if (draft.step === 2 && action === "p") {
+    const paymentStatus = PAYMENT_STATUSES[parseInt(arg, 10)];
+    if (!paymentStatus) return;
+    await applyPaymentUpdate(env, draft.selectedOrderId, paymentStatus);
+    await clearDraft(env, chatId);
+    return editMessageText(
+      env,
+      chatId,
+      messageId,
+      `Статус «${escapeHtml(draft.selectedOrderName)}» змінено на Здано ✅\nОплата: ${paymentStatus} ✅`,
       { inline_keyboard: [] }
     );
   }

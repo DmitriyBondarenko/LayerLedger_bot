@@ -3,19 +3,24 @@ import { optionsKeyboard, actionsKeyboard, mergeKeyboards } from "../lib/keyboar
 import { setDraft, clearDraft } from "../lib/kv.js";
 import { todayISO } from "../lib/date.js";
 import { escapeHtml } from "../lib/format.js";
-import { WORK_TYPES, ORDER_SOURCES, PRIORITIES, CURRENCIES } from "../constants.js";
+import {
+  WORK_TYPES, WORK_TYPE_LABELS,
+  ORDER_SOURCES, ORDER_SOURCE_LABELS,
+  PRIORITIES, PRIORITY_LABELS,
+  CURRENCIES, CURRENCY_LABELS,
+} from "../constants.js";
 import { createOrder } from "../commands/new-order.js";
 
 const STEPS = [
   { key: "Назва", label: "Назва замовлення", type: "text" },
   { key: "Клієнт", label: "Клієнт", type: "text", optional: true },
-  { key: "Тип роботи", label: "Тип роботи", type: "select", options: WORK_TYPES },
-  { key: "Джерело замовлення", label: "Джерело замовлення", type: "select", options: ORDER_SOURCES },
+  { key: "Тип роботи", label: "Тип роботи", type: "select", options: WORK_TYPES, optionLabels: WORK_TYPE_LABELS },
+  { key: "Джерело замовлення", label: "Джерело замовлення", type: "select", options: ORDER_SOURCES, optionLabels: ORDER_SOURCE_LABELS },
   { key: "Дедлайн", label: "Дедлайн", type: "date" },
-  { key: "Пріоритет", label: "Пріоритет", type: "select", options: PRIORITIES },
+  { key: "Пріоритет", label: "Пріоритет", type: "select", options: PRIORITIES, optionLabels: PRIORITY_LABELS },
   { key: "Вартість замовлення", label: "Вартість замовлення", type: "number" },
   { key: "Сума передоплати", label: "Сума передоплати", type: "number", optional: true },
-  { key: "Валюта", label: "Валюта", type: "select", options: CURRENCIES },
+  { key: "Валюта", label: "Валюта", type: "select", options: CURRENCIES, optionLabels: CURRENCY_LABELS },
   { key: "Коментар", label: "Коментар", type: "text", optional: true },
 ];
 
@@ -25,7 +30,7 @@ function isConfirmStep(draft) {
 
 function buildStepKeyboard(step) {
   const keyboards = [];
-  if (step.type === "select") keyboards.push(optionsKeyboard(step.options, "w:opt"));
+  if (step.type === "select") keyboards.push(optionsKeyboard(step.options, "w:opt", 2, step.optionLabels));
   if (step.type === "date") {
     keyboards.push(actionsKeyboard([
       { label: "Сьогодні", data: "w:date:today" },
@@ -41,7 +46,7 @@ function buildStepKeyboard(step) {
 
 function renderConfirm(draft) {
   const lines = STEPS.map((step) => `${step.label}: ${draft.data[step.key] ? escapeHtml(draft.data[step.key]) : "—"}`);
-  const text = `<b>Перевірте замовлення:</b>\n\n${lines.join("\n")}\n\nСтворити?`;
+  const text = `🔍 <b>Перевірте замовлення:</b>\n\n${lines.join("\n")}\n\nСтворити?`;
   const replyMarkup = actionsKeyboard([
     { label: "✅ Створити", data: "w:confirm" },
     { label: "❌ Скасувати", data: "w:cancel" },
@@ -53,11 +58,11 @@ function renderStep(draft) {
   if (isConfirmStep(draft)) return renderConfirm(draft);
 
   const step = STEPS[draft.step];
-  let text = `<b>Нове замовлення</b> — крок ${draft.step + 1}/${STEPS.length}\n\n`;
+  let text = `🧾 <b>Нове замовлення</b> — крок ${draft.step + 1}/${STEPS.length}\n\n`;
   if (step.type === "select") {
     text += `Оберіть <b>${step.label}</b>:`;
   } else if (step.type === "date") {
-    text += `Введіть <b>${step.label}</b> (YYYY-MM-DD) або оберіть кнопкою:`;
+    text += `📅 Введіть <b>${step.label}</b> (YYYY-MM-DD) або оберіть кнопкою:`;
   } else if (step.type === "number") {
     text += `Введіть <b>${step.label}</b> (число)${step.optional ? " або натисніть «Пропустити»" : ""}:`;
   } else {
@@ -123,7 +128,7 @@ export async function handleCallback(env, chatId, messageId, data, draft) {
     const res = await createOrder(env, draft.data);
     await clearDraft(env, chatId);
     if (res.object === "error") {
-      return editMessageText(env, chatId, messageId, `Помилка при створенні замовлення: ${escapeHtml(res.message)}`, { inline_keyboard: [] });
+      return editMessageText(env, chatId, messageId, `⚠️ Помилка при створенні замовлення: ${escapeHtml(res.message)}`, { inline_keyboard: [] });
     }
     return editMessageText(env, chatId, messageId, `Замовлення «${escapeHtml(draft.data["Назва"])}» додано ✅`, { inline_keyboard: [] });
   }

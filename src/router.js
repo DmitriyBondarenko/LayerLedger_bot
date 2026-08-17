@@ -52,14 +52,14 @@ export async function handleUpdate(env, update) {
   const chatId = message.chat.id;
 
   if (!isAllowed(env, chatId)) {
-    return sendMessage(env, chatId, `Бот приватний. Ваш chat ID: <code>${chatId}</code>`);
+    return sendMessage(env, chatId, `🔒 Бот приватний. Ваш chat ID: <code>${chatId}</code>`);
   }
 
   const text = message.text.trim();
 
   if (text === "/cancel") {
     await clearDraft(env, chatId);
-    return sendMessage(env, chatId, "Скасовано.");
+    return sendMessage(env, chatId, "❌ Скасовано.");
   }
 
   if (!text.startsWith("/")) {
@@ -72,7 +72,7 @@ export async function handleUpdate(env, update) {
   const [command, ...args] = text.split(" ");
   const handler = COMMANDS[command];
   if (!handler) {
-    return sendMessage(env, chatId, "Не знаю такої команди. Введіть / щоб побачити список.");
+    return sendMessage(env, chatId, "❓ Не знаю такої команди. Введіть / щоб побачити список.");
   }
   return handler(env, chatId, args);
 }

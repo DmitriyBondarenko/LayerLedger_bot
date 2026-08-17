@@ -8,3 +8,9 @@ export function applyStatusUpdate(env, pageId, newStatus) {
   }
   return notionApi(env, `pages/${pageId}`, "PATCH", { properties: props });
 }
+
+export function applyPaymentUpdate(env, pageId, paymentStatus) {
+  return notionApi(env, `pages/${pageId}`, "PATCH", {
+    properties: { "Статус оплати": { select: { name: paymentStatus } } },
+  });
+}
