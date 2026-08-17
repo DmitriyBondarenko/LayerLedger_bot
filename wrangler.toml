@@ -1,0 +1,6 @@
+name = "layerledger-bot"
+main = "worker.js"
+compatibility_date = "2026-08-17"
+
+[triggers]
+crons = ["0 7 * * *"]
