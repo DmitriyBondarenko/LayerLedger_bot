@@ -22,12 +22,16 @@ export async function handleTomorrow(env, chatId) {
   return sendMessage(env, chatId, "📅 <b>Завтра:</b>\n\n" + results.map(fmtOrder).join("\n\n"));
 }
 
-export async function handleActive(env, chatId) {
-  const results = await queryOrders(
+export function queryActiveOrders(env) {
+  return queryOrders(
     env,
     { or: ACTIVE_STATUSES.map((s) => ({ property: "Статус", select: { equals: s } })) },
     [{ property: "Дедлайн", direction: "ascending" }]
   );
+}
+
+export async function handleActive(env, chatId) {
+  const results = await queryActiveOrders(env);
   if (!results.length) return sendMessage(env, chatId, "Активних замовлень немає.");
   return sendMessage(env, chatId, "📋 <b>Активні замовлення:</b>\n\n" + results.map(fmtOrder).join("\n\n"));
 }

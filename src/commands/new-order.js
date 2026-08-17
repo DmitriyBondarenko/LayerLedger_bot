@@ -1,26 +1,7 @@
 import { notionApi } from "../lib/notion.js";
-import { sendMessage } from "../lib/telegram.js";
 import { todayISO } from "../lib/date.js";
-import { escapeHtml } from "../lib/format.js";
 
-export function parseOrderMessage(text) {
-  const data = {};
-  for (const line of text.split("\n")) {
-    const idx = line.indexOf(":");
-    if (idx === -1) continue;
-    const key = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim();
-    if (value) data[key] = value;
-  }
-  return data;
-}
-
-export async function handleNewOrderMessage(env, chatId, text) {
-  const data = parseOrderMessage(text);
-  if (!data["Назва"]) {
-    return sendMessage(env, chatId, "Не вистачає поля Назва — замовлення не створено.");
-  }
-
+export function buildOrderProperties(data) {
   const properties = {
     "Назва": { title: [{ text: { content: data["Назва"] } }] },
     "Дата отримання": { date: { start: todayISO(0) } },
@@ -46,13 +27,12 @@ export async function handleNewOrderMessage(env, chatId, text) {
   if (data["Валюта"]) properties["Валюта"] = { select: { name: data["Валюта"] } };
   if (data["Коментар"]) properties["Коментар"] = { rich_text: [{ text: { content: data["Коментар"] } }] };
 
-  const res = await notionApi(env, "pages", "POST", {
-    parent: { database_id: env.NOTION_DATABASE_ID },
-    properties,
-  });
+  return properties;
+}
 
-  if (res.object === "error") {
-    return sendMessage(env, chatId, `Помилка при створенні замовлення: ${escapeHtml(res.message)}`);
-  }
-  return sendMessage(env, chatId, `Замовлення «${escapeHtml(data["Назва"])}» додано ✅`);
+export function createOrder(env, data) {
+  return notionApi(env, "pages", "POST", {
+    parent: { database_id: env.NOTION_DATABASE_ID },
+    properties: buildOrderProperties(data),
+  });
 }
