@@ -46,7 +46,7 @@ export function formatReport(report) {
   const header = `💰 <b>Звіт (${formatDisplayDate(start)} — ${formatDisplayDate(end)}):</b>`;
 
   if (!orderCount) {
-    return `${header}\n\nЗамовлень немає.`;
+    return `${header}\n\nЗамовлень немає 😿`;
   }
 
   const sections = Object.entries(byCurrency).map(([currency, { count, total, paid }]) =>

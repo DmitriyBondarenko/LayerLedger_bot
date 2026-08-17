@@ -24,7 +24,7 @@ export async function start(env, chatId) {
 
   const results = await queryActiveOrders(env);
   if (!results.length) {
-    return sendMessage(env, chatId, "Активних замовлень немає.");
+    return sendMessage(env, chatId, "Активних замовлень немає 😿");
   }
 
   const orders = results.map((page) => ({

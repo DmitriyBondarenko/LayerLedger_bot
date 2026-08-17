@@ -44,7 +44,7 @@ export function queryActiveOrders(env) {
 
 export async function handleActive(env, chatId) {
   const results = await queryActiveOrders(env);
-  if (!results.length) return sendMessage(env, chatId, "Активних замовлень немає.");
+  if (!results.length) return sendMessage(env, chatId, "Активних замовлень немає 😿");
   const orders = toOrderButtons(
     results,
     (page) => formatDisplayDate(page.properties["Дедлайн"]?.date?.start) || "без дедлайну"
