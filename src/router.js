@@ -9,13 +9,13 @@ import * as statusWizard from "./wizards/status.js";
 import * as reportWizard from "./wizards/report.js";
 
 const MENU_KEYBOARD = menuKeyboard([
-  { label: "🧾 /new", data: "menu:new" },
-  { label: "📅 /today", data: "menu:today" },
-  { label: "🗓 /tomorrow", data: "menu:tomorrow" },
-  { label: "📋 /active", data: "menu:active" },
-  { label: "💸 /unpaid", data: "menu:unpaid" },
-  { label: "💰 /report", data: "menu:report" },
-  { label: "🔄 /status", data: "menu:status" },
+  { label: "🧾 Нове замовлення", data: "menu:new" },
+  { label: "📅 Сьогодні", data: "menu:today" },
+  { label: "🗓 Завтра", data: "menu:tomorrow" },
+  { label: "📋 Активні", data: "menu:active" },
+  { label: "💸 Неоплачені", data: "menu:unpaid" },
+  { label: "💰 Звіт", data: "menu:report" },
+  { label: "🔄 Статус", data: "menu:status" },
 ]);
 
 const COMMANDS = {
