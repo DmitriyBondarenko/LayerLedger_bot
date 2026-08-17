@@ -3,9 +3,9 @@ import { isAllowed } from "./lib/auth.js";
 import { getDraft, clearDraft } from "./lib/kv.js";
 import { START_MESSAGE } from "./constants.js";
 import { handleToday, handleTomorrow, handleActive, handleUnpaid } from "./commands/orders.js";
-import { handleReport } from "./commands/report.js";
 import * as newOrderWizard from "./wizards/newOrder.js";
 import * as statusWizard from "./wizards/status.js";
+import * as reportWizard from "./wizards/report.js";
 
 const COMMANDS = {
   "/start": (env, chatId) => sendMessage(env, chatId, START_MESSAGE),
@@ -14,7 +14,7 @@ const COMMANDS = {
   "/tomorrow": handleTomorrow,
   "/active": handleActive,
   "/unpaid": handleUnpaid,
-  "/report": (env, chatId, args) => handleReport(env, chatId, args),
+  "/report": (env, chatId) => reportWizard.start(env, chatId),
   "/status": (env, chatId) => statusWizard.start(env, chatId),
 };
 
@@ -29,7 +29,7 @@ async function handleCallbackQuery(env, callbackQuery) {
 
   const draft = await getDraft(env, chatId);
   if (!draft) {
-    return answerCallbackQuery(env, callbackQuery.id, "Сесія закінчилась. Почніть заново з /new або /status.", true);
+    return answerCallbackQuery(env, callbackQuery.id, "Сесія закінчилась. Почніть команду заново.", true);
   }
 
   await answerCallbackQuery(env, callbackQuery.id);
@@ -39,6 +39,9 @@ async function handleCallbackQuery(env, callbackQuery) {
   }
   if (draft.type === "status" && data.startsWith("st:")) {
     return statusWizard.handleCallback(env, chatId, messageId, data, draft);
+  }
+  if (draft.type === "report" && data.startsWith("rp:")) {
+    return reportWizard.handleCallback(env, chatId, messageId, data, draft);
   }
 }
 
@@ -66,6 +69,9 @@ export async function handleUpdate(env, update) {
     const draft = await getDraft(env, chatId);
     if (draft?.type === "new") {
       return newOrderWizard.handleText(env, chatId, draft, text);
+    }
+    if (draft?.type === "report") {
+      return reportWizard.handleText(env, chatId, draft, text);
     }
   }
 
