@@ -1,8 +1,18 @@
-import { queryOrders } from "../lib/notion.js";
+import { queryOrders, getPage } from "../lib/notion.js";
 import { sendMessage } from "../lib/telegram.js";
-import { todayISO } from "../lib/date.js";
-import { fmtOrder } from "../lib/format.js";
+import { todayISO, formatDisplayDate } from "../lib/date.js";
+import { orderName, fmtOrderDetail } from "../lib/format.js";
+import { orderListKeyboard } from "../lib/keyboard.js";
 import { ACTIVE_STATUSES } from "../constants.js";
+
+// Turns query results into {id, label} pairs for orderListKeyboard, where `hint`
+// appends a bit of context relevant to that particular list (status, deadline, price...).
+export function toOrderButtons(results, hint) {
+  return results.map((page) => ({
+    id: page.id,
+    label: hint ? `${orderName(page)} — ${hint(page)}` : orderName(page),
+  }));
+}
 
 export async function handleToday(env, chatId) {
   const results = await queryOrders(env, {
@@ -10,7 +20,8 @@ export async function handleToday(env, chatId) {
     date: { equals: todayISO(0) },
   });
   if (!results.length) return sendMessage(env, chatId, "На сьогодні дедлайнів немає 🎉");
-  return sendMessage(env, chatId, "📅 <b>Сьогодні:</b>\n\n" + results.map(fmtOrder).join("\n\n"));
+  const orders = toOrderButtons(results, (page) => page.properties["Статус"]?.select?.name || "-");
+  return sendMessage(env, chatId, "📅 <b>Сьогодні:</b>", orderListKeyboard(orders));
 }
 
 export async function handleTomorrow(env, chatId) {
@@ -19,7 +30,8 @@ export async function handleTomorrow(env, chatId) {
     date: { equals: todayISO(1) },
   });
   if (!results.length) return sendMessage(env, chatId, "На завтра дедлайнів немає 🎉");
-  return sendMessage(env, chatId, "📅 <b>Завтра:</b>\n\n" + results.map(fmtOrder).join("\n\n"));
+  const orders = toOrderButtons(results, (page) => page.properties["Статус"]?.select?.name || "-");
+  return sendMessage(env, chatId, "📅 <b>Завтра:</b>", orderListKeyboard(orders));
 }
 
 export function queryActiveOrders(env) {
@@ -33,7 +45,11 @@ export function queryActiveOrders(env) {
 export async function handleActive(env, chatId) {
   const results = await queryActiveOrders(env);
   if (!results.length) return sendMessage(env, chatId, "Активних замовлень немає.");
-  return sendMessage(env, chatId, "📋 <b>Активні замовлення:</b>\n\n" + results.map(fmtOrder).join("\n\n"));
+  const orders = toOrderButtons(
+    results,
+    (page) => formatDisplayDate(page.properties["Дедлайн"]?.date?.start) || "без дедлайну"
+  );
+  return sendMessage(env, chatId, "📋 <b>Активні замовлення:</b>", orderListKeyboard(orders));
 }
 
 export async function handleUnpaid(env, chatId) {
@@ -41,5 +57,18 @@ export async function handleUnpaid(env, chatId) {
     or: ["Не оплачено", "Частково"].map((s) => ({ property: "Статус оплати", select: { equals: s } })),
   });
   if (!results.length) return sendMessage(env, chatId, "Все оплачено ✅");
-  return sendMessage(env, chatId, "💸 <b>Оплачено не повністю:</b>\n\n" + results.map(fmtOrder).join("\n\n"));
+  const orders = toOrderButtons(results, (page) => {
+    const cost = page.properties["Вартість замовлення"]?.number ?? "-";
+    const currency = page.properties["Валюта"]?.select?.name || "";
+    return `${cost} ${currency}`.trim();
+  });
+  return sendMessage(env, chatId, "💸 <b>Оплачено не повністю:</b>", orderListKeyboard(orders));
+}
+
+export async function handleOrderDetail(env, chatId, pageId) {
+  const page = await getPage(env, pageId);
+  if (page.object === "error") {
+    return sendMessage(env, chatId, "⚠️ Не вдалося знайти замовлення (можливо, видалено).");
+  }
+  return sendMessage(env, chatId, fmtOrderDetail(page));
 }

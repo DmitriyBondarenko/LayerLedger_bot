@@ -19,6 +19,23 @@ export function actionsKeyboard(actions) {
   return { inline_keyboard: [actions.map(({ label, data }) => ({ text: label, callback_data: data }))] };
 }
 
+// Like actionsKeyboard, but wraps into rows of `columns` instead of a single row.
+export function menuKeyboard(actions, columns = 2) {
+  const buttons = actions.map(({ label, data }) => ({ text: label, callback_data: data }));
+  const rows = [];
+  for (let i = 0; i < buttons.length; i += columns) {
+    rows.push(buttons.slice(i, i + columns));
+  }
+  return { inline_keyboard: rows };
+}
+
 export function mergeKeyboards(...keyboards) {
   return { inline_keyboard: keyboards.flatMap((k) => k.inline_keyboard) };
+}
+
+// One button per order, callback_data carries the Notion page id directly
+// ("ord:<pageId>") — a page id is short and fixed-format, so unlike the
+// wizards' option/order pickers this needs no index lookup into stored state.
+export function orderListKeyboard(orders) {
+  return { inline_keyboard: orders.map(({ id, label }) => [{ text: label, callback_data: `ord:${id}` }]) };
 }

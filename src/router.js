@@ -1,14 +1,26 @@
 import { sendMessage, answerCallbackQuery } from "./lib/telegram.js";
 import { isAllowed } from "./lib/auth.js";
 import { getDraft, clearDraft } from "./lib/kv.js";
+import { menuKeyboard } from "./lib/keyboard.js";
 import { START_MESSAGE } from "./constants.js";
-import { handleToday, handleTomorrow, handleActive, handleUnpaid } from "./commands/orders.js";
+import { handleToday, handleTomorrow, handleActive, handleUnpaid, handleOrderDetail } from "./commands/orders.js";
 import * as newOrderWizard from "./wizards/newOrder.js";
 import * as statusWizard from "./wizards/status.js";
 import * as reportWizard from "./wizards/report.js";
 
+const MENU_KEYBOARD = menuKeyboard([
+  { label: "🧾 /new", data: "menu:new" },
+  { label: "📅 /today", data: "menu:today" },
+  { label: "🗓 /tomorrow", data: "menu:tomorrow" },
+  { label: "📋 /active", data: "menu:active" },
+  { label: "💸 /unpaid", data: "menu:unpaid" },
+  { label: "💰 /report", data: "menu:report" },
+  { label: "🔄 /status", data: "menu:status" },
+]);
+
 const COMMANDS = {
-  "/start": (env, chatId) => sendMessage(env, chatId, START_MESSAGE),
+  "/start": (env, chatId) => sendMessage(env, chatId, START_MESSAGE, MENU_KEYBOARD),
+  "/menu": (env, chatId) => sendMessage(env, chatId, "Меню:", MENU_KEYBOARD),
   "/new": (env, chatId) => newOrderWizard.start(env, chatId),
   "/today": handleToday,
   "/tomorrow": handleTomorrow,
@@ -25,6 +37,17 @@ async function handleCallbackQuery(env, callbackQuery) {
 
   if (!chatId || !isAllowed(env, chatId)) {
     return answerCallbackQuery(env, callbackQuery.id, "Немає доступу", true);
+  }
+
+  if (data.startsWith("ord:")) {
+    await answerCallbackQuery(env, callbackQuery.id);
+    return handleOrderDetail(env, chatId, data.slice("ord:".length));
+  }
+
+  if (data.startsWith("menu:")) {
+    await answerCallbackQuery(env, callbackQuery.id);
+    const handler = COMMANDS["/" + data.slice("menu:".length)];
+    return handler?.(env, chatId);
   }
 
   const draft = await getDraft(env, chatId);

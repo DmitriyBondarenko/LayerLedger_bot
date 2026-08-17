@@ -20,3 +20,7 @@ export async function queryOrders(env, filter, sorts) {
   });
   return res.results || [];
 }
+
+export function getPage(env, pageId) {
+  return notionApi(env, `pages/${pageId}`, "GET");
+}
