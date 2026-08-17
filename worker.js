@@ -1,21 +1,18 @@
 // ============================================================
 // LayerLedger — Telegram bot (Cloudflare Worker)
 // Order & income manager, backed by a Notion database.
-// Notion property names and Select option values are in Ukrainian
-// to match the "Orders" database schema — keep them in sync if you
-// rename anything in Notion.
 //
 // Requires 4 secrets (Cloudflare dashboard → Worker → Settings → Variables):
 //   TELEGRAM_BOT_TOKEN  — token from @BotFather
 //   NOTION_API_KEY      — Internal Integration Secret from Notion
 //   NOTION_DATABASE_ID  — the Orders database ID
 //   ALLOWED_CHAT_ID     — one or more allowed Telegram chat ids, comma-separated
-//                         (e.g. "111111111,222222222" — wife's and yours, for testing)
+//                         (e.g. "111111111,222222222")
 //                         Leave as "0" at first — the bot will tell you
 //                         the real chat id the first time each of you messages it.
 //
 // Requires a Cron Trigger (Settings → Triggers) for the daily reminder,
-// e.g. "0 6 * * *" (~9:00 Kyiv time in summer, UTC has no DST).
+// e.g. "0 7 * * *" (~10:00 Kyiv time in summer, UTC has no DST).
 // ============================================================
 
 const NOTION_VERSION = "2022-06-28";
