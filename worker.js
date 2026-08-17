@@ -351,7 +351,7 @@ async function handleReminders(env) {
 export default {
   async fetch(request, env) {
     if (request.method !== "POST") {
-      return new Response("LayerLedger bot is running.", { status: 200 });
+      return new Response("LayerLedger bot is successfully running.", { status: 200 });
     }
     try {
       const update = await request.json();
