@@ -42,6 +42,28 @@ export function queryActiveOrders(env) {
   );
 }
 
+// Active orders plus Здано orders that aren't fully paid yet, so /status can
+// also be used to update payment on an order that's already been delivered.
+// Excluding fully-paid Здано orders keeps this list from growing forever —
+// there's nothing left to do on those in this flow.
+export function queryStatusChangeableOrders(env) {
+  return queryOrders(
+    env,
+    {
+      or: [
+        ...ACTIVE_STATUSES.map((s) => ({ property: "Статус", select: { equals: s } })),
+        {
+          and: [
+            { property: "Статус", select: { equals: "Здано" } },
+            { property: "Статус оплати", select: { does_not_equal: "Оплачено повністю" } },
+          ],
+        },
+      ],
+    },
+    [{ property: "Дедлайн", direction: "ascending" }]
+  );
+}
+
 export async function handleActive(env, chatId) {
   const results = await queryActiveOrders(env);
   if (!results.length) return sendMessage(env, chatId, "Активних замовлень немає 😿");

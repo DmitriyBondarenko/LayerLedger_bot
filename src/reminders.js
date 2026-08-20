@@ -6,18 +6,31 @@ import { orderListKeyboard } from "./lib/keyboard.js";
 import { ACTIVE_STATUSES } from "./constants.js";
 import { toOrderButtons } from "./commands/orders.js";
 
-export async function handleReminders(env) {
-  const results = await queryOrders(env, {
+function queryActiveOrdersByDeadline(env, date) {
+  return queryOrders(env, {
     and: [
-      { property: "Дедлайн", date: { equals: todayISO(1) } },
+      { property: "Дедлайн", date: { equals: date } },
       { or: ACTIVE_STATUSES.map((s) => ({ property: "Статус", select: { equals: s } })) },
     ],
   });
-  if (!results.length) return;
+}
 
-  const orders = toOrderButtons(results, (page) => page.properties["Статус"]?.select?.name || "-");
-  const keyboard = orderListKeyboard(orders);
+export async function handleReminders(env) {
+  const [todayOrders, tomorrowOrders] = await Promise.all([
+    queryActiveOrdersByDeadline(env, todayISO(0)),
+    queryActiveOrdersByDeadline(env, todayISO(1)),
+  ]);
+  if (!todayOrders.length && !tomorrowOrders.length) return;
+
+  const hint = (page) => page.properties["Статус"]?.select?.name || "-";
   for (const chatId of allowedChatIds(env)) {
-    await sendMessage(env, chatId, "⏰ <b>Нагадування — дедлайн завтра:</b>", keyboard);
+    if (todayOrders.length) {
+      const keyboard = orderListKeyboard(toOrderButtons(todayOrders, hint));
+      await sendMessage(env, chatId, "⏰ <b>Нагадування — дедлайн сьогодні:</b>", keyboard);
+    }
+    if (tomorrowOrders.length) {
+      const keyboard = orderListKeyboard(toOrderButtons(tomorrowOrders, hint));
+      await sendMessage(env, chatId, "⏰ <b>Нагадування — дедлайн завтра:</b>", keyboard);
+    }
   }
 }

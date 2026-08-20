@@ -1,7 +1,7 @@
 import { sendMessage, editMessageText, editMessageReplyMarkup } from "../lib/telegram.js";
-import { optionsKeyboard, actionsKeyboard, mergeKeyboards } from "../lib/keyboard.js";
+import { optionsKeyboard, actionsKeyboard, menuKeyboard, mergeKeyboards } from "../lib/keyboard.js";
 import { setDraft, clearDraft } from "../lib/kv.js";
-import { todayISO } from "../lib/date.js";
+import { todayISO, formatShortDate } from "../lib/date.js";
 import { escapeHtml } from "../lib/format.js";
 import {
   WORK_TYPES, WORK_TYPE_LABELS,
@@ -28,15 +28,22 @@ function isConfirmStep(draft) {
   return draft.step >= STEPS.length;
 }
 
+// Quick-pick buttons for the next week: Сьогодні, Завтра, then "Пт 22.08"-style
+// labels for the following 5 days. Typed YYYY-MM-DD input still covers anything further out.
+function dateQuickPicks() {
+  const labels = ["Сьогодні", "Завтра"];
+  const actions = [];
+  for (let offset = 0; offset <= 6; offset++) {
+    const label = offset < labels.length ? labels[offset] : formatShortDate(todayISO(offset));
+    actions.push({ label, data: `w:date:${offset}` });
+  }
+  return actions;
+}
+
 function buildStepKeyboard(step) {
   const keyboards = [];
   if (step.type === "select") keyboards.push(optionsKeyboard(step.options, "w:opt", 2, step.optionLabels));
-  if (step.type === "date") {
-    keyboards.push(actionsKeyboard([
-      { label: "Сьогодні", data: "w:date:today" },
-      { label: "Завтра", data: "w:date:tomorrow" },
-    ]));
-  }
+  if (step.type === "date") keyboards.push(menuKeyboard(dateQuickPicks(), 3));
   const bottomRow = [];
   if (step.optional) bottomRow.push({ label: "Пропустити", data: "w:skip" });
   bottomRow.push({ label: "Скасувати", data: "w:cancel" });
@@ -142,7 +149,9 @@ export async function handleCallback(env, chatId, messageId, data, draft) {
     draft.data[step.key] = value;
     draft.step += 1;
   } else if (action === "date" && step.type === "date") {
-    draft.data[step.key] = arg === "today" ? todayISO(0) : todayISO(1);
+    const offset = parseInt(arg, 10);
+    if (Number.isNaN(offset)) return;
+    draft.data[step.key] = todayISO(offset);
     draft.step += 1;
   } else {
     return;

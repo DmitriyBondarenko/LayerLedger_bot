@@ -7,8 +7,12 @@ Notion database. Runs as a Cloudflare Worker.
 
 - **`/new`** — creates an order through a step-by-step wizard (buttons for
   select fields, typed input for free text/numbers/dates).
-- **`/status`** — pick an active order, pick its new status via buttons; if
-  you mark it **Здано**, it also asks for the payment status.
+- **`/status`** — pick an active (or already **Здано** but not fully paid)
+  order, pick its new status via buttons; if you mark it **Здано**, it also
+  asks for the payment status. Picking an order that's already **Здано**
+  skips straight to the payment-status prompt, so you can mark it paid
+  without touching status again. Marking an order **Оплачено повністю**
+  while it's **Здано** automatically moves it to **Архів**.
 - **`/today`**, **`/tomorrow`** — orders with a deadline today / tomorrow.
 - **`/active`** — all orders that are В черзі / В роботі / На правках.
 - **`/unpaid`** — orders that aren't fully paid.
@@ -16,7 +20,8 @@ Notion database. Runs as a Cloudflare Worker.
   period.
 - **`/cancel`** — aborts an in-progress `/new` or `/status` wizard.
 - A daily cron job (weekdays, 07:00 UTC) reminds every allowed chat about
-  orders with a deadline tomorrow.
+  active orders with a deadline today and/or tomorrow — sent as two separate
+  messages when both apply.
 
 The bot is restricted to an allowlist of Telegram chat ids — anyone else
 messaging it just gets told their chat id, so you can add it to the
@@ -68,8 +73,8 @@ between requests.
    |---|---|---|
    | Назва | Title | — |
    | Клієнт | Text | — |
-   | Тип роботи | Select | Рілс, Креатив, Моушн, Карусель, Презентація, Інше |
-   | Джерело замовлення | Select | Біржа, Соцмережі, Реферал, Постійний клієнт, Пряме звернення |
+   | Тип роботи | Select | Рілс, Креатив, Моушн, Карусель, Презентація, Інше, Проєкт |
+   | Джерело замовлення | Select | Інстаграм, Тредс, Реферал, Постійний клієнт |
    | Дедлайн | Date | — |
    | Пріоритет | Select | Високий, Середній, Низький |
    | Вартість замовлення | Number | — |
