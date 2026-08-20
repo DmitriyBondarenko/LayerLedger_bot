@@ -1,14 +1,9 @@
 import { queryOrders, getPage } from "../lib/notion.js";
 import { sendMessage } from "../lib/telegram.js";
 import { todayISO, formatDisplayDate } from "../lib/date.js";
-import { orderName, fmtOrderDetail } from "../lib/format.js";
+import { orderName, fmtOrderDetail, statusLabel } from "../lib/format.js";
 import { orderListKeyboard } from "../lib/keyboard.js";
-import { ACTIVE_STATUSES, STATUSES, STATUS_LABELS } from "../constants.js";
-
-function statusLabel(name) {
-  const index = STATUSES.indexOf(name);
-  return index === -1 ? name || "-" : STATUS_LABELS[index];
-}
+import { ACTIVE_STATUSES } from "../constants.js";
 
 // Turns query results into {id, label} pairs for orderListKeyboard, where `hint`
 // appends a bit of context relevant to that particular list (status, deadline, price...).
@@ -25,7 +20,7 @@ export async function handleToday(env, chatId) {
     date: { equals: todayISO(0) },
   });
   if (!results.length) return sendMessage(env, chatId, "На сьогодні дедлайнів немає 🎉");
-  const orders = toOrderButtons(results, (page) => page.properties["Статус"]?.select?.name || "-");
+  const orders = toOrderButtons(results, (page) => statusLabel(page.properties["Статус"]?.select?.name));
   return sendMessage(env, chatId, "📅 <b>Сьогодні:</b>", orderListKeyboard(orders));
 }
 
@@ -35,7 +30,7 @@ export async function handleTomorrow(env, chatId) {
     date: { equals: todayISO(1) },
   });
   if (!results.length) return sendMessage(env, chatId, "На завтра дедлайнів немає 🎉");
-  const orders = toOrderButtons(results, (page) => page.properties["Статус"]?.select?.name || "-");
+  const orders = toOrderButtons(results, (page) => statusLabel(page.properties["Статус"]?.select?.name));
   return sendMessage(env, chatId, "📅 <b>Завтра:</b>", orderListKeyboard(orders));
 }
 
@@ -88,7 +83,9 @@ export async function handleUnpaid(env, chatId) {
   const orders = toOrderButtons(results, (page) => {
     const cost = page.properties["Вартість замовлення"]?.number ?? "-";
     const currency = page.properties["Валюта"]?.select?.name || "";
-    return `${cost} ${currency}`.trim();
+    const amount = `${cost} ${currency}`.trim();
+    const status = statusLabel(page.properties["Статус"]?.select?.name);
+    return `${amount} · ${status}`;
   });
   return sendMessage(env, chatId, "💸 <b>Оплачено не повністю:</b>", orderListKeyboard(orders));
 }

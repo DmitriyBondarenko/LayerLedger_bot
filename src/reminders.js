@@ -5,6 +5,7 @@ import { allowedChatIds } from "./lib/auth.js";
 import { orderListKeyboard } from "./lib/keyboard.js";
 import { ACTIVE_STATUSES } from "./constants.js";
 import { toOrderButtons } from "./commands/orders.js";
+import { statusLabel } from "./lib/format.js";
 
 function queryActiveOrdersByDeadline(env, date) {
   return queryOrders(env, {
@@ -22,7 +23,7 @@ export async function handleReminders(env) {
   ]);
   if (!todayOrders.length && !tomorrowOrders.length) return;
 
-  const hint = (page) => page.properties["Статус"]?.select?.name || "-";
+  const hint = (page) => statusLabel(page.properties["Статус"]?.select?.name);
   for (const chatId of allowedChatIds(env)) {
     if (todayOrders.length) {
       const keyboard = orderListKeyboard(toOrderButtons(todayOrders, hint));

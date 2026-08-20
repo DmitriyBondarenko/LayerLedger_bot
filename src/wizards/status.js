@@ -1,7 +1,7 @@
 import { sendMessage, editMessageText } from "../lib/telegram.js";
 import { optionsKeyboard, actionsKeyboard, mergeKeyboards } from "../lib/keyboard.js";
 import { setDraft, clearDraft } from "../lib/kv.js";
-import { escapeHtml } from "../lib/format.js";
+import { escapeHtml, statusLabel } from "../lib/format.js";
 import { formatShortDate } from "../lib/date.js";
 import { STATUSES, STATUS_LABELS, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS } from "../constants.js";
 import { queryStatusChangeableOrders } from "../commands/orders.js";
@@ -17,9 +17,7 @@ function orderStepKeyboard(orders) {
   const labels = orders.map((o) => {
     const suffix = o.deadline ? ` — ${formatShortDate(o.deadline)}` : "";
     if (o.status === "Здано") return `✅ ${o.name}${suffix}`;
-    const index = STATUSES.indexOf(o.status);
-    const statusText = index === -1 ? "" : ` · ${STATUS_LABELS[index]}`;
-    return `${o.name}${suffix}${statusText}`;
+    return `${o.name}${suffix} · ${statusLabel(o.status)}`;
   });
   return mergeKeyboards(optionsKeyboard(names, "st:o", 1, labels), actionsKeyboard([{ label: "Скасувати", data: "st:cancel" }]));
 }
