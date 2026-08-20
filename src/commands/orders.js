@@ -3,7 +3,12 @@ import { sendMessage } from "../lib/telegram.js";
 import { todayISO, formatDisplayDate } from "../lib/date.js";
 import { orderName, fmtOrderDetail } from "../lib/format.js";
 import { orderListKeyboard } from "../lib/keyboard.js";
-import { ACTIVE_STATUSES } from "../constants.js";
+import { ACTIVE_STATUSES, STATUSES, STATUS_LABELS } from "../constants.js";
+
+function statusLabel(name) {
+  const index = STATUSES.indexOf(name);
+  return index === -1 ? name || "-" : STATUS_LABELS[index];
+}
 
 // Turns query results into {id, label} pairs for orderListKeyboard, where `hint`
 // appends a bit of context relevant to that particular list (status, deadline, price...).
@@ -67,10 +72,11 @@ export function queryStatusChangeableOrders(env) {
 export async function handleActive(env, chatId) {
   const results = await queryActiveOrders(env);
   if (!results.length) return sendMessage(env, chatId, "Активних замовлень немає 😿");
-  const orders = toOrderButtons(
-    results,
-    (page) => formatDisplayDate(page.properties["Дедлайн"]?.date?.start) || "без дедлайну"
-  );
+  const orders = toOrderButtons(results, (page) => {
+    const deadline = formatDisplayDate(page.properties["Дедлайн"]?.date?.start) || "без дедлайну";
+    const status = statusLabel(page.properties["Статус"]?.select?.name);
+    return `${deadline} · ${status}`;
+  });
   return sendMessage(env, chatId, "📋 <b>Активні замовлення:</b>", orderListKeyboard(orders));
 }
 
