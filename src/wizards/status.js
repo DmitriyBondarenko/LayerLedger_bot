@@ -10,12 +10,16 @@ import { applyStatusUpdate, applyPaymentUpdate } from "../commands/status.js";
 // Order names often repeat (same client, several orders), so the button label
 // adds the deadline as a disambiguator — same idea as toOrderButtons's hint
 // elsewhere, just inlined since this keyboard indexes by position, not page id.
+// Здано orders get the ✅ prefix instead of a status suffix — the checkmark
+// already says "done", no need to also spell out "Здано" next to it.
 function orderStepKeyboard(orders) {
   const names = orders.map((o) => o.name);
   const labels = orders.map((o) => {
-    const prefix = o.status === "Здано" ? "✅ " : "";
     const suffix = o.deadline ? ` — ${formatShortDate(o.deadline)}` : "";
-    return `${prefix}${o.name}${suffix}`;
+    if (o.status === "Здано") return `✅ ${o.name}${suffix}`;
+    const index = STATUSES.indexOf(o.status);
+    const statusText = index === -1 ? "" : ` · ${STATUS_LABELS[index]}`;
+    return `${o.name}${suffix}${statusText}`;
   });
   return mergeKeyboards(optionsKeyboard(names, "st:o", 1, labels), actionsKeyboard([{ label: "Скасувати", data: "st:cancel" }]));
 }

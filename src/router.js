@@ -4,7 +4,7 @@ import { getDraft, clearDraft } from "./lib/kv.js";
 import { menuKeyboard } from "./lib/keyboard.js";
 import { START_MESSAGE } from "./constants.js";
 import { handleToday, handleTomorrow, handleActive, handleUnpaid, handleOrderDetail } from "./commands/orders.js";
-import * as newOrderWizard from "./wizards/newOrder.js";
+import * as newOrderWizard from "./wizards/new-order.js";
 import * as statusWizard from "./wizards/status.js";
 import * as reportWizard from "./wizards/report.js";
 

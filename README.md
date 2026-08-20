@@ -49,7 +49,7 @@ src/
     status.js              Notion status/payment update helpers
     new-order.js            Notion order-creation helper
   wizards/
-    newOrder.js            /new step machine
+    new-order.js           /new step machine
     status.js                /status step machine
 ```
 
