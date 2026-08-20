@@ -1,0 +1,5 @@
+#!/bin/sh
+# Blocks the commit if the test suite doesn't pass.
+# Wired up automatically via `npm install` (see package.json's "prepare" script).
+
+npm test

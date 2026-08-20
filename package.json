@@ -1,0 +1,13 @@
+{
+  "name": "layerledger-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "git config core.hooksPath .githooks"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}
