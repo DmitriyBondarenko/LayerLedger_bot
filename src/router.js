@@ -1,26 +1,32 @@
 import { sendMessage, answerCallbackQuery } from "./lib/telegram.js";
 import { isAllowed } from "./lib/auth.js";
 import { getDraft, clearDraft } from "./lib/kv.js";
-import { menuKeyboard } from "./lib/keyboard.js";
+import { replyKeyboard } from "./lib/keyboard.js";
 import { START_MESSAGE } from "./constants.js";
 import { handleToday, handleTomorrow, handleActive, handleUnpaid, handleOrderDetail } from "./commands/orders.js";
 import * as newOrderWizard from "./wizards/new-order.js";
 import * as statusWizard from "./wizards/status.js";
 import * as reportWizard from "./wizards/report.js";
 
-const MENU_KEYBOARD = menuKeyboard([
-  { label: "🧾 Нове замовлення", data: "menu:new" },
-  { label: "📅 Сьогодні", data: "menu:today" },
-  { label: "🗓 Завтра", data: "menu:tomorrow" },
-  { label: "📋 Активні", data: "menu:active" },
-  { label: "💸 Неоплачені", data: "menu:unpaid" },
-  { label: "💰 Звіт", data: "menu:report" },
-  { label: "🔄 Статус", data: "menu:status" },
-]);
+// Persistent reply keyboard — pinned above the message box across the whole
+// chat, unlike an inline keyboard that's attached to one message. Tapping a
+// button sends its label as plain text, so MAIN_MENU_COMMANDS below maps
+// each label back to the command it triggers.
+const MAIN_MENU_ACTIONS = [
+  { label: "🧾 Нове замовлення", command: "/new" },
+  { label: "📅 Сьогодні", command: "/today" },
+  { label: "🗓 Завтра", command: "/tomorrow" },
+  { label: "📋 Активні", command: "/active" },
+  { label: "💸 Неоплачені", command: "/unpaid" },
+  { label: "💰 Звіт", command: "/report" },
+  { label: "🔄 Статус", command: "/status" },
+];
+const MAIN_MENU_KEYBOARD = replyKeyboard(MAIN_MENU_ACTIONS, 2);
+const MAIN_MENU_COMMANDS = new Map(MAIN_MENU_ACTIONS.map((a) => [a.label, a.command]));
 
 const COMMANDS = {
-  "/start": (env, chatId) => sendMessage(env, chatId, START_MESSAGE, MENU_KEYBOARD),
-  "/menu": (env, chatId) => sendMessage(env, chatId, "Меню:", MENU_KEYBOARD),
+  "/start": (env, chatId) => sendMessage(env, chatId, START_MESSAGE, MAIN_MENU_KEYBOARD),
+  "/menu": (env, chatId) => sendMessage(env, chatId, "Меню 👇", MAIN_MENU_KEYBOARD),
   "/new": (env, chatId) => newOrderWizard.start(env, chatId),
   "/today": handleToday,
   "/tomorrow": handleTomorrow,
@@ -42,12 +48,6 @@ async function handleCallbackQuery(env, callbackQuery) {
   if (data.startsWith("ord:")) {
     await answerCallbackQuery(env, callbackQuery.id);
     return handleOrderDetail(env, chatId, data.slice("ord:".length));
-  }
-
-  if (data.startsWith("menu:")) {
-    await answerCallbackQuery(env, callbackQuery.id);
-    const handler = COMMANDS["/" + data.slice("menu:".length)];
-    return handler?.(env, chatId);
   }
 
   const draft = await getDraft(env, chatId);
@@ -86,6 +86,15 @@ export async function handleUpdate(env, update) {
   if (text === "/cancel") {
     await clearDraft(env, chatId);
     return sendMessage(env, chatId, "❌ Скасовано.");
+  }
+
+  // Menu-bar taps arrive as plain text (the button's label). They take
+  // priority over an in-progress wizard — tapping one means "do this
+  // instead," so drop whatever draft was active and run the command.
+  const menuCommand = MAIN_MENU_COMMANDS.get(text);
+  if (menuCommand) {
+    await clearDraft(env, chatId);
+    return COMMANDS[menuCommand](env, chatId);
   }
 
   if (!text.startsWith("/")) {

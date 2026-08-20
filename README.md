@@ -5,6 +5,10 @@ Notion database. Runs as a Cloudflare Worker.
 
 ## What it does
 
+- After **`/start`** (or **`/menu`** to bring it back), a persistent reply
+  keyboard stays pinned above the message box with one-tap buttons for the
+  main commands. Tapping one while a wizard is mid-flow cancels that wizard
+  and runs the tapped command instead.
 - **`/new`** — creates an order through a step-by-step wizard (buttons for
   select fields, typed input for free text/numbers/dates).
 - **`/status`** — pick an active (or already **Здано** but not fully paid)

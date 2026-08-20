@@ -33,6 +33,19 @@ export function mergeKeyboards(...keyboards) {
   return { inline_keyboard: keyboards.flatMap((k) => k.inline_keyboard) };
 }
 
+// A persistent reply keyboard (pinned above the message box, survives across
+// messages) rather than an inline one attached to a single message. Buttons
+// carry no callback_data — tapping one just sends its label as a plain text
+// message, so the router matches on that text instead of a callback action.
+export function replyKeyboard(actions, columns = 2) {
+  const buttons = actions.map(({ label }) => ({ text: label }));
+  const rows = [];
+  for (let i = 0; i < buttons.length; i += columns) {
+    rows.push(buttons.slice(i, i + columns));
+  }
+  return { keyboard: rows, resize_keyboard: true };
+}
+
 // One button per order, callback_data carries the Notion page id directly
 // ("ord:<pageId>") — a page id is short and fixed-format, so unlike the
 // wizards' option/order pickers this needs no index lookup into stored state.
