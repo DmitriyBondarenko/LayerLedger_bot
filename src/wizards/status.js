@@ -2,13 +2,21 @@ import { sendMessage, editMessageText } from "../lib/telegram.js";
 import { optionsKeyboard, actionsKeyboard, mergeKeyboards } from "../lib/keyboard.js";
 import { setDraft, clearDraft } from "../lib/kv.js";
 import { escapeHtml } from "../lib/format.js";
+import { formatShortDate } from "../lib/date.js";
 import { STATUSES, STATUS_LABELS, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS } from "../constants.js";
 import { queryStatusChangeableOrders } from "../commands/orders.js";
 import { applyStatusUpdate, applyPaymentUpdate } from "../commands/status.js";
 
+// Order names often repeat (same client, several orders), so the button label
+// adds the deadline as a disambiguator — same idea as toOrderButtons's hint
+// elsewhere, just inlined since this keyboard indexes by position, not page id.
 function orderStepKeyboard(orders) {
   const names = orders.map((o) => o.name);
-  const labels = orders.map((o) => (o.status === "Здано" ? `✅ ${o.name}` : o.name));
+  const labels = orders.map((o) => {
+    const prefix = o.status === "Здано" ? "✅ " : "";
+    const suffix = o.deadline ? ` — ${formatShortDate(o.deadline)}` : "";
+    return `${prefix}${o.name}${suffix}`;
+  });
   return mergeKeyboards(optionsKeyboard(names, "st:o", 1, labels), actionsKeyboard([{ label: "Скасувати", data: "st:cancel" }]));
 }
 
@@ -32,6 +40,7 @@ export async function start(env, chatId) {
     id: page.id,
     name: page.properties["Назва"]?.title?.[0]?.plain_text || "(без назви)",
     status: page.properties["Статус"]?.select?.name,
+    deadline: page.properties["Дедлайн"]?.date?.start,
   }));
 
   const draft = { type: "status", step: 0, orders };
