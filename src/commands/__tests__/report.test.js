@@ -41,13 +41,14 @@ describe("monthRange", () => {
   });
 });
 
-function page({ currency, cost, prepaid, paymentStatus }) {
+function page({ currency, cost, prepaid, paymentStatus, workType }) {
   return {
     properties: {
       "Валюта": currency ? { select: { name: currency } } : {},
       "Вартість замовлення": { number: cost },
       "Сума передоплати": { number: prepaid },
       "Статус оплати": paymentStatus ? { select: { name: paymentStatus } } : {},
+      "Тип роботи": workType ? { select: { name: workType } } : {},
     },
   };
 }
@@ -70,20 +71,39 @@ describe("computeReport", () => {
 
   it("groups totals by currency, using cost as paid when fully paid, prepaid otherwise", async () => {
     queryOrders.mockResolvedValue([
-      page({ currency: "UAH", cost: 1000, prepaid: 300, paymentStatus: "Частково" }),
-      page({ currency: "UAH", cost: 500, prepaid: 0, paymentStatus: "Оплачено повністю" }),
-      page({ currency: "USD", cost: 200, prepaid: 0, paymentStatus: "Не оплачено" }),
+      page({ currency: "UAH", cost: 1000, prepaid: 300, paymentStatus: "Частково", workType: "Рілс" }),
+      page({ currency: "UAH", cost: 500, prepaid: 0, paymentStatus: "Оплачено повністю", workType: "Рілс" }),
+      page({ currency: "USD", cost: 200, prepaid: 0, paymentStatus: "Не оплачено", workType: "Моушн" }),
     ]);
     const report = await computeReport({}, "2026-08-01", "2026-08-17");
     expect(report.orderCount).toBe(3);
-    expect(report.byCurrency.UAH).toEqual({ count: 2, total: 1500, paid: 800 });
-    expect(report.byCurrency.USD).toEqual({ count: 1, total: 200, paid: 0 });
+    expect(report.byCurrency.UAH).toMatchObject({ count: 2, total: 1500, paid: 800 });
+    expect(report.byCurrency.USD).toMatchObject({ count: 1, total: 200, paid: 0 });
   });
 
   it("falls back to '—' for missing currency and 0 for missing amounts", async () => {
     queryOrders.mockResolvedValue([page({ currency: undefined, cost: undefined, prepaid: undefined, paymentStatus: undefined })]);
     const report = await computeReport({}, "2026-08-01", "2026-08-17");
-    expect(report.byCurrency["—"]).toEqual({ count: 1, total: 0, paid: 0 });
+    expect(report.byCurrency["—"]).toMatchObject({ count: 1, total: 0, paid: 0 });
+  });
+
+  it("breaks totals down by work type within each currency", async () => {
+    queryOrders.mockResolvedValue([
+      page({ currency: "UAH", cost: 1000, prepaid: 0, paymentStatus: "Не оплачено", workType: "Рілс" }),
+      page({ currency: "UAH", cost: 400, prepaid: 0, paymentStatus: "Не оплачено", workType: "Рілс" }),
+      page({ currency: "UAH", cost: 700, prepaid: 0, paymentStatus: "Не оплачено", workType: "Моушн" }),
+    ]);
+    const report = await computeReport({}, "2026-08-01", "2026-08-17");
+    expect(report.byCurrency.UAH.byWorkType).toEqual({
+      "Рілс": { count: 2, total: 1400 },
+      "Моушн": { count: 1, total: 700 },
+    });
+  });
+
+  it("groups orders with no work type under '—'", async () => {
+    queryOrders.mockResolvedValue([page({ currency: "UAH", cost: 500, prepaid: 0, paymentStatus: "Не оплачено" })]);
+    const report = await computeReport({}, "2026-08-01", "2026-08-17");
+    expect(report.byCurrency.UAH.byWorkType["—"]).toEqual({ count: 1, total: 500 });
   });
 });
 
@@ -98,12 +118,47 @@ describe("formatReport", () => {
       start: "2026-08-01",
       end: "2026-08-17",
       orderCount: 2,
-      byCurrency: { UAH: { count: 2, total: 1500, paid: 800 } },
+      byCurrency: { UAH: { count: 2, total: 1500, paid: 800, byWorkType: { "Рілс": { count: 2, total: 1500 } } } },
     });
     expect(text).toContain("<b>UAH</b>");
     expect(text).toContain("Замовлень: 2");
     expect(text).toContain("Загальна сума: 1500");
     expect(text).toContain("Оплачено: 800");
     expect(text).toContain("Залишилось отримати: 700");
+  });
+
+  it("renders the work-type breakdown with emoji labels, sorted by revenue descending", () => {
+    const text = formatReport({
+      start: "2026-08-01",
+      end: "2026-08-17",
+      orderCount: 3,
+      byCurrency: {
+        UAH: {
+          count: 3,
+          total: 2100,
+          paid: 2100,
+          byWorkType: {
+            "Моушн": { count: 1, total: 700 },
+            "Рілс": { count: 2, total: 1400 },
+          },
+        },
+      },
+    });
+    expect(text).toContain("За типом роботи:");
+    const riilsIndex = text.indexOf("🎬 Рілс: 2 · 1400");
+    const motionIndex = text.indexOf("✨ Моушн: 1 · 700");
+    expect(riilsIndex).toBeGreaterThan(-1);
+    expect(motionIndex).toBeGreaterThan(-1);
+    expect(riilsIndex).toBeLessThan(motionIndex);
+  });
+
+  it("falls back to the raw name for an unrecognized work type", () => {
+    const text = formatReport({
+      start: "2026-08-01",
+      end: "2026-08-17",
+      orderCount: 1,
+      byCurrency: { UAH: { count: 1, total: 500, paid: 0, byWorkType: { "—": { count: 1, total: 500 } } } },
+    });
+    expect(text).toContain("—: 1 · 500");
   });
 });

@@ -1,5 +1,6 @@
 import { queryOrders } from "../lib/notion.js";
 import { todayISO, formatDisplayDate } from "../lib/date.js";
+import { workTypeLabel } from "../lib/format.js";
 
 export function weekRange() {
   const now = new Date();
@@ -31,11 +32,17 @@ export async function computeReport(env, start, end) {
     const prepaid = p["Сума передоплати"]?.number || 0;
     const status = p["Статус оплати"]?.select?.name;
     const paid = status === "Оплачено повністю" ? cost : prepaid;
+    const workType = p["Тип роботи"]?.select?.name || "—";
 
-    if (!byCurrency[currency]) byCurrency[currency] = { count: 0, total: 0, paid: 0 };
-    byCurrency[currency].count += 1;
-    byCurrency[currency].total += cost;
-    byCurrency[currency].paid += paid;
+    if (!byCurrency[currency]) byCurrency[currency] = { count: 0, total: 0, paid: 0, byWorkType: {} };
+    const bucket = byCurrency[currency];
+    bucket.count += 1;
+    bucket.total += cost;
+    bucket.paid += paid;
+
+    if (!bucket.byWorkType[workType]) bucket.byWorkType[workType] = { count: 0, total: 0 };
+    bucket.byWorkType[workType].count += 1;
+    bucket.byWorkType[workType].total += cost;
   }
 
   return { start, end, orderCount: results.length, byCurrency };
@@ -49,13 +56,21 @@ export function formatReport(report) {
     return `${header}\n\nЗамовлень немає 😿`;
   }
 
-  const sections = Object.entries(byCurrency).map(([currency, { count, total, paid }]) =>
-    `<b>${currency}</b>\n` +
-    `Замовлень: ${count}\n` +
-    `Загальна сума: ${total}\n` +
-    `Оплачено: ${paid}\n` +
-    `Залишилось отримати: ${total - paid}`
-  );
+  const sections = Object.entries(byCurrency).map(([currency, { count, total, paid, byWorkType }]) => {
+    const workTypeLines = Object.entries(byWorkType)
+      .sort(([, a], [, b]) => b.total - a.total)
+      .map(([type, { count, total }]) => `${workTypeLabel(type)}: ${count} · ${total}`)
+      .join("\n");
+
+    return (
+      `<b>${currency}</b>\n` +
+      `Замовлень: ${count}\n` +
+      `Загальна сума: ${total}\n` +
+      `Оплачено: ${paid}\n` +
+      `Залишилось отримати: ${total - paid}\n\n` +
+      `За типом роботи:\n${workTypeLines}`
+    );
+  });
 
   return `${header}\n\n${sections.join("\n\n")}`;
 }

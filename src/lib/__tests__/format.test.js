@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { statusLabel, paymentStatusLabel, escapeHtml, orderName, fmtOrderDetail } from "../format.js";
+import { statusLabel, paymentStatusLabel, workTypeLabel, escapeHtml, orderName, fmtOrderDetail } from "../format.js";
 
 describe("statusLabel", () => {
   it("maps a known status to its emoji label", () => {
@@ -23,6 +23,21 @@ describe("paymentStatusLabel", () => {
 
   it("falls back to '-' for empty input", () => {
     expect(paymentStatusLabel(null)).toBe("-");
+  });
+});
+
+describe("workTypeLabel", () => {
+  it("maps a known work type to its emoji label", () => {
+    expect(workTypeLabel("Рілс")).toBe("🎬 Рілс");
+  });
+
+  it("falls back to the raw name for an unknown work type", () => {
+    expect(workTypeLabel("Щось інше")).toBe("Щось інше");
+  });
+
+  it("falls back to '-' for empty input", () => {
+    expect(workTypeLabel("")).toBe("-");
+    expect(workTypeLabel(undefined)).toBe("-");
   });
 });
 

@@ -1,5 +1,5 @@
 import { formatDisplayDate } from "./date.js";
-import { STATUSES, STATUS_LABELS, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS } from "../constants.js";
+import { STATUSES, STATUS_LABELS, PAYMENT_STATUSES, PAYMENT_STATUS_LABELS, WORK_TYPES, WORK_TYPE_LABELS } from "../constants.js";
 
 // Emoji-labeled equivalent of a raw Notion select value, e.g. "В роботі" -> "🔧 В роботі".
 // Shared by every order list/detail view so status reads the same everywhere.
@@ -11,6 +11,11 @@ export function statusLabel(name) {
 export function paymentStatusLabel(name) {
   const index = PAYMENT_STATUSES.indexOf(name);
   return index === -1 ? name || "-" : PAYMENT_STATUS_LABELS[index];
+}
+
+export function workTypeLabel(name) {
+  const index = WORK_TYPES.indexOf(name);
+  return index === -1 ? name || "-" : WORK_TYPE_LABELS[index];
 }
 
 export function escapeHtml(str) {
