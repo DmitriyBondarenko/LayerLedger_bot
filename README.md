@@ -96,6 +96,26 @@ between requests.
    token — this is `TELEGRAM_BOT_TOKEN`.
 2. Message the bot once yourself (and anyone else who should use it) — it
    will reply with your chat id since you're not allowed yet.
+3. Register the command list so it shows up in the ⌘-style menu button next
+   to the message box (one-time call, re-run whenever the command list
+   changes):
+   ```
+   curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setMyCommands" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "commands": [
+         { "command": "menu", "description": "Показати меню кнопок" },
+         { "command": "new", "description": "Додати нове замовлення" },
+         { "command": "today", "description": "Замовлення з дедлайном сьогодні" },
+         { "command": "tomorrow", "description": "Замовлення з дедлайном завтра" },
+         { "command": "active", "description": "Активні замовлення" },
+         { "command": "unpaid", "description": "Неоплачені замовлення" },
+         { "command": "report", "description": "Дохід за період" },
+         { "command": "status", "description": "Змінити статус чи оплату замовлення" },
+         { "command": "cancel", "description": "Скасувати поточний крок" }
+       ]
+     }'
+   ```
 
 ### 3. Cloudflare
 
