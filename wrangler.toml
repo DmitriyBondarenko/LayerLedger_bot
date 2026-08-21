@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2026-08-17"
 
 [triggers]
-crons = ["0 7 * * 1-5"]
+crons = ["15 7 * * *"] # TEMP: test run, revert to ["0 7 * * 1-5"] after
 
 # Stores in-progress /new and /status wizard state per chat.
 # Create with `wrangler kv namespace create DRAFTS` (or via the dashboard:
