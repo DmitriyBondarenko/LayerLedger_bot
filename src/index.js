@@ -33,6 +33,8 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(handleReminders(env));
+    ctx.waitUntil(
+      handleReminders(env).catch((err) => console.error("handleReminders failed:", err)),
+    );
   },
 };

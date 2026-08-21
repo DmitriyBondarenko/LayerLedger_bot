@@ -10,7 +10,11 @@ export async function notionApi(env, path, method = "POST", body) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) {
+    console.error(`Notion API error (${method} ${path}): ${res.status}`, data);
+  }
+  return data;
 }
 
 export async function queryOrders(env, filter, sorts) {

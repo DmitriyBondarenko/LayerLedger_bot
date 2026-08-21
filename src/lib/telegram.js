@@ -1,9 +1,13 @@
-export function telegramApi(env, method, body) {
-  return fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${method}`, {
+export async function telegramApi(env, method, body) {
+  const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+  if (!res.ok) {
+    console.error(`Telegram API error (${method}): ${res.status}`, await res.text());
+  }
+  return res;
 }
 
 export function sendMessage(env, chatId, text, replyMarkup) {
